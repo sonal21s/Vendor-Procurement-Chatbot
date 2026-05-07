@@ -1,30 +1,29 @@
-import chromadb
+import numpy as np
 from sentence_transformers import SentenceTransformer
 
-COLLECTION_NAME = "vendors"
 EMBED_MODEL = "all-MiniLM-L6-v2"
 
 
 class VectorStore:
     def __init__(self):
-        self.client = chromadb.EphemeralClient()
         self.encoder = SentenceTransformer(EMBED_MODEL)
-        self.collection = self.client.create_collection(COLLECTION_NAME)
+        self.embeddings: np.ndarray | None = None
+        self.documents: list[str] = []
 
     def index(self, chunks: list[str]) -> None:
         if not chunks:
             return
-        embeddings = self.encoder.encode(chunks, show_progress_bar=False).tolist()
-        ids = [f"row_{i}" for i in range(len(chunks))]
-        self.collection.add(documents=chunks, embeddings=embeddings, ids=ids)
+        self.documents = chunks
+        emb = self.encoder.encode(chunks, show_progress_bar=False)
+        # Normalize once so cosine similarity = dot product at query time
+        self.embeddings = emb / np.linalg.norm(emb, axis=1, keepdims=True)
 
     def query(self, question: str, n_results: int = 5) -> list[str]:
-        total = self.collection.count()
-        if total == 0:
+        if self.embeddings is None or not self.documents:
             return []
-        embedding = self.encoder.encode([question], show_progress_bar=False).tolist()
-        results = self.collection.query(
-            query_embeddings=embedding,
-            n_results=min(n_results, total),
-        )
-        return results["documents"][0]
+        q = self.encoder.encode([question], show_progress_bar=False)
+        q = q / np.linalg.norm(q)
+        scores = (self.embeddings @ q.T).flatten()
+        top_k = min(n_results, len(self.documents))
+        top_indices = np.argsort(scores)[::-1][:top_k]
+        return [self.documents[i] for i in top_indices]
