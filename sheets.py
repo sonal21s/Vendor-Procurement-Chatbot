@@ -19,7 +19,7 @@ def load_sheet_data(sheet_id: str) -> list[dict]:
     creds = _get_credentials()
     client = gspread.authorize(creds)
     sheet = client.open_by_key(sheet_id)
-    worksheet = sheet.get_worksheet(0)
+    worksheet = sheet.worksheet("VendorDB")
     records = worksheet.get_all_records()
     return records
 
