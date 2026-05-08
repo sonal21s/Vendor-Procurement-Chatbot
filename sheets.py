@@ -21,6 +21,7 @@ def load_sheet_data(sheet_id: str) -> list[dict]:
     sheet = client.open_by_key(sheet_id)
     worksheet = sheet.worksheet("VendorDB")
     records = worksheet.get_all_records()
+    print(f"Loaded {len(records)} records from VendorDB")
     return records
 
 

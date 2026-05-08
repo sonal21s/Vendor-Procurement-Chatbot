@@ -47,6 +47,8 @@ class VectorStore:
         top_k = min(n_results, len(self.documents))
         vector_indices = list(np.argsort(scores)[::-1][:top_k])
 
-        # Merge: keyword matches first (complete), then vector results not already included
-        combined = list(keyword_indices) + [i for i in vector_indices if i not in keyword_indices]
-        return [self.documents[i] for i in combined]
+        # If keyword search found matches, return only those (precise, no noise).
+        # Fall back to vector search only when keywords find nothing.
+        if keyword_indices:
+            return [self.documents[i] for i in keyword_indices]
+        return [self.documents[i] for i in vector_indices]

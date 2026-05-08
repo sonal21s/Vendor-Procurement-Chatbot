@@ -13,7 +13,9 @@ st.set_page_config(
 SHEET_ID = st.secrets["SHEET_ID"]
 HF_TOKEN = st.secrets["HF_TOKEN"]
 
-chatbot.configure(HF_TOKEN)
+if "chatbot_configured" not in st.session_state:
+    chatbot.configure(HF_TOKEN)
+    st.session_state["chatbot_configured"] = True
 
 
 # ── Data loading & indexing (cached for the lifetime of the server instance) ─
